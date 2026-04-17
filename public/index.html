@@ -1,1 +1,902 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Garena Account Security Tool</title>
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --bg: #060c10;
+      --surface: #0d1a22;
+      --border: #1a3a4a;
+      --cyan: #00e5ff;
+      --green: #00ff88;
+      --yellow: #ffdd00;
+      --red: #ff3d5a;
+      --purple: #b04aff;
+      --white: #d0e8f0;
+      --dim: #3a6070;
+      --glow-c: 0 0 12px #00e5ff55;
+      --glow-g: 0 0 12px #00ff8855;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
+    body {
+      background: var(--bg);
+      color: var(--white);
+      font-family: 'Share Tech Mono', monospace;
+      min-height: 100vh;
+      padding: 0;
+      overflow-x: hidden;
+    }
+
+    /* Scanline overlay */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background: repeating-linear-gradient(
+        to bottom,
+        transparent 0px,
+        transparent 3px,
+        rgba(0,229,255,0.015) 3px,
+        rgba(0,229,255,0.015) 4px
+      );
+      pointer-events: none;
+      z-index: 999;
+    }
+
+    .container {
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 20px 16px 60px;
+    }
+
+    /* ── HEADER ── */
+    .header {
+      text-align: center;
+      padding: 32px 0 20px;
+      position: relative;
+    }
+    .header-title {
+      font-family: 'Orbitron', sans-serif;
+      font-size: clamp(1.4rem, 5vw, 2.6rem);
+      font-weight: 900;
+      color: var(--cyan);
+      text-shadow: 0 0 20px var(--cyan), 0 0 40px var(--cyan)55;
+      letter-spacing: 4px;
+      animation: flicker 8s infinite;
+    }
+    @keyframes flicker {
+      0%,94%,96%,100% { opacity:1; }
+      95% { opacity:0.6; }
+    }
+    .header-sub {
+      margin-top: 6px;
+      color: var(--dim);
+      font-size: 0.78rem;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+    }
+    .badge-row {
+      display: flex;
+      justify-content: center;
+      gap: 16px;
+      margin-top: 14px;
+      flex-wrap: wrap;
+    }
+    .badge {
+      font-size: 0.7rem;
+      padding: 3px 10px;
+      border-radius: 2px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+    }
+    .badge-c { border: 1px solid var(--cyan); color: var(--cyan); }
+    .badge-g { border: 1px solid var(--green); color: var(--green); }
+    .badge-y { border: 1px solid var(--yellow); color: var(--yellow); }
+
+    /* ── DIVIDER ── */
+    .divider {
+      border: none;
+      border-top: 1px solid var(--border);
+      margin: 20px 0;
+      position: relative;
+    }
+    .divider::after {
+      content: '◈';
+      position: absolute;
+      left: 50%;
+      top: -9px;
+      transform: translateX(-50%);
+      background: var(--bg);
+      padding: 0 8px;
+      color: var(--dim);
+      font-size: 0.75rem;
+    }
+
+    /* ── MENU GRID ── */
+    .menu-label {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 0.65rem;
+      letter-spacing: 4px;
+      color: var(--dim);
+      text-align: center;
+      margin-bottom: 14px;
+      text-transform: uppercase;
+    }
+    .menu-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 10px;
+      margin-bottom: 28px;
+    }
+    .menu-btn {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 16px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      cursor: pointer;
+      transition: all 0.2s;
+      text-align: left;
+      width: 100%;
+      color: var(--white);
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 0.82rem;
+    }
+    .menu-btn:hover {
+      border-color: var(--cyan);
+      background: #0d2030;
+      box-shadow: var(--glow-c);
+      transform: translateY(-1px);
+    }
+    .menu-btn.active {
+      border-color: var(--cyan);
+      background: #0d2030;
+      box-shadow: var(--glow-c);
+    }
+    .menu-num {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 0.7rem;
+      color: var(--cyan);
+      min-width: 24px;
+    }
+    .menu-icon { font-size: 1rem; }
+    .menu-text { flex: 1; }
+
+    /* ── PANEL ── */
+    .panel {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 24px;
+      display: none;
+      animation: slideIn 0.25s ease;
+    }
+    .panel.visible { display: block; }
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .panel-title {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 0.75rem;
+      letter-spacing: 3px;
+      color: var(--cyan);
+      text-transform: uppercase;
+      margin-bottom: 20px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    /* ── FORM ELEMENTS ── */
+    .field { margin-bottom: 16px; }
+    .field label {
+      display: block;
+      font-size: 0.72rem;
+      color: var(--dim);
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      margin-bottom: 6px;
+    }
+    .field input, .field select {
+      width: 100%;
+      background: #060c10;
+      border: 1px solid var(--border);
+      color: var(--white);
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 0.85rem;
+      padding: 10px 12px;
+      border-radius: 3px;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .field input:focus, .field select:focus {
+      border-color: var(--cyan);
+      box-shadow: var(--glow-c);
+    }
+    .field input::placeholder { color: var(--dim); }
+    .field select option { background: var(--surface); }
+
+    .radio-group {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .radio-option {
+      flex: 1;
+      min-width: 140px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 14px;
+      background: #060c10;
+      border: 1px solid var(--border);
+      border-radius: 3px;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-size: 0.8rem;
+    }
+    .radio-option:has(input:checked) {
+      border-color: var(--cyan);
+      box-shadow: var(--glow-c);
+    }
+    .radio-option input { display: none; }
+
+    /* ── BUTTONS ── */
+    .btn-row { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 20px; }
+    .btn {
+      padding: 11px 22px;
+      border-radius: 3px;
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 0.82rem;
+      letter-spacing: 1px;
+      cursor: pointer;
+      border: 1px solid;
+      transition: all 0.2s;
+      text-transform: uppercase;
+    }
+    .btn-primary {
+      background: transparent;
+      border-color: var(--cyan);
+      color: var(--cyan);
+    }
+    .btn-primary:hover {
+      background: var(--cyan);
+      color: var(--bg);
+      box-shadow: var(--glow-c);
+    }
+    .btn-primary:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+    .btn-secondary {
+      background: transparent;
+      border-color: var(--dim);
+      color: var(--dim);
+    }
+    .btn-secondary:hover {
+      border-color: var(--white);
+      color: var(--white);
+    }
+    .btn-danger {
+      background: transparent;
+      border-color: var(--red);
+      color: var(--red);
+    }
+    .btn-danger:hover {
+      background: var(--red);
+      color: var(--bg);
+    }
+
+    /* ── LOG / OUTPUT ── */
+    .log-box {
+      margin-top: 18px;
+      background: #060c10;
+      border: 1px solid var(--border);
+      border-radius: 3px;
+      padding: 14px;
+      min-height: 60px;
+      max-height: 280px;
+      overflow-y: auto;
+      font-size: 0.8rem;
+      line-height: 1.7;
+    }
+    .log-box:empty::before {
+      content: '// output will appear here';
+      color: var(--dim);
+    }
+    .log-success { color: var(--green); }
+    .log-error   { color: var(--red); }
+    .log-info    { color: var(--cyan); }
+    .log-warn    { color: var(--yellow); }
+    .log-data    { color: var(--purple); }
+
+    /* ── STEP INDICATOR ── */
+    .steps {
+      display: flex;
+      gap: 0;
+      margin-bottom: 20px;
+      border: 1px solid var(--border);
+      border-radius: 3px;
+      overflow: hidden;
+    }
+    .step {
+      flex: 1;
+      padding: 8px;
+      text-align: center;
+      font-size: 0.68rem;
+      letter-spacing: 1px;
+      color: var(--dim);
+      border-right: 1px solid var(--border);
+      transition: all 0.3s;
+      text-transform: uppercase;
+    }
+    .step:last-child { border-right: none; }
+    .step.active  { color: var(--cyan); background: #0d2030; }
+    .step.done    { color: var(--green); background: #001a0d; }
+
+    /* ── INFO CARD ── */
+    .info-card {
+      background: #060c10;
+      border: 1px solid var(--border);
+      border-radius: 3px;
+      padding: 16px;
+      margin-top: 12px;
+    }
+    .info-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 8px 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.8rem;
+    }
+    .info-row:last-child { border-bottom: none; }
+    .info-key  { color: var(--dim); min-width: 140px; font-size: 0.72rem; letter-spacing: 1px; text-transform: uppercase; }
+    .info-val  { color: var(--white); word-break: break-all; }
+    .info-val.green  { color: var(--green); }
+    .info-val.yellow { color: var(--yellow); }
+
+    /* ── LOADER ── */
+    .loader {
+      display: inline-block;
+      animation: spin 0.6s linear infinite;
+    }
+    @keyframes spin {
+      from { transform: rotate(0deg); }
+      to   { transform: rotate(360deg); }
+    }
+
+    /* ── FOOTER ── */
+    .footer {
+      text-align: center;
+      margin-top: 40px;
+      padding-top: 20px;
+      border-top: 1px solid var(--border);
+      font-size: 0.7rem;
+      color: var(--dim);
+      letter-spacing: 2px;
+    }
+    .footer a { color: var(--cyan); text-decoration: none; }
+    .footer a:hover { text-shadow: var(--glow-c); }
+
+    /* scrollbar */
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-track { background: var(--bg); }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <!-- HEADER -->
+  <div class="header">
+    <div class="header-title">⚔ GARENA TOOL</div>
+    <div class="header-sub">Account Security Management System v2.0</div>
+    <div class="badge-row">
+      <span class="badge badge-c">Elite Edition</span>
+      <span class="badge badge-g">@sulav_codex_ff</span>
+      <span class="badge badge-y">@agajayofficial</span>
+    </div>
+  </div>
+
+  <hr class="divider"/>
+
+  <!-- MENU -->
+  <div class="menu-label">◈ Select Operation ◈</div>
+  <div class="menu-grid">
+    <button class="menu-btn" onclick="showPanel('addEmail')">
+      <span class="menu-num">01</span><span class="menu-icon">📧</span>
+      <span class="menu-text">Add Recovery Email</span>
+    </button>
+    <button class="menu-btn" onclick="showPanel('checkEmail')">
+      <span class="menu-num">02</span><span class="menu-icon">🔍</span>
+      <span class="menu-text">Check Recovery Email</span>
+    </button>
+    <button class="menu-btn" onclick="showPanel('platforms')">
+      <span class="menu-num">03</span><span class="menu-icon">🔗</span>
+      <span class="menu-text">Check Linked Platforms</span>
+    </button>
+    <button class="menu-btn" onclick="showPanel('cancelEmail')">
+      <span class="menu-num">04</span><span class="menu-icon">❌</span>
+      <span class="menu-text">Cancel Recovery Email</span>
+    </button>
+    <button class="menu-btn" onclick="showPanel('unbind')">
+      <span class="menu-num">05</span><span class="menu-icon">🔓</span>
+      <span class="menu-text">Unbind Email</span>
+    </button>
+    <button class="menu-btn" onclick="showPanel('changeEmail')">
+      <span class="menu-num">06</span><span class="menu-icon">🔄</span>
+      <span class="menu-text">Change Bind Email</span>
+    </button>
+    <button class="menu-btn" onclick="showPanel('revoke')">
+      <span class="menu-num">07</span><span class="menu-icon">🚫</span>
+      <span class="menu-text">Revoke Access Token</span>
+    </button>
+  </div>
+
+  <!-- ─── PANEL 1: Add Recovery Email ─── -->
+  <div id="panel-addEmail" class="panel">
+    <div class="panel-title">📧 Add Recovery Email</div>
+    <div class="steps" id="steps-addEmail">
+      <div class="step active" id="addStep-1">1 · Send OTP</div>
+      <div class="step" id="addStep-2">2 · Verify OTP</div>
+      <div class="step" id="addStep-3">3 · Bind</div>
+    </div>
+    <div id="addEmail-step1">
+      <div class="field"><label>Email Address</label>
+        <input type="email" id="add-email" placeholder="your@email.com"/></div>
+      <div class="field"><label>Access Token</label>
+        <input type="text" id="add-token" placeholder="Paste access token here"/></div>
+      <div class="btn-row">
+        <button class="btn btn-primary" id="add-sendOtp-btn" onclick="addSendOtp()">▶ Send OTP</button>
+      </div>
+    </div>
+    <div id="addEmail-step2" style="display:none">
+      <div class="field"><label>Enter OTP (check your email)</label>
+        <input type="text" id="add-otp" placeholder="6-digit OTP"/></div>
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="addVerifyOtp()">▶ Verify OTP</button>
+      </div>
+    </div>
+    <div class="log-box" id="log-addEmail"></div>
+  </div>
+
+  <!-- ─── PANEL 2: Check Recovery Email ─── -->
+  <div id="panel-checkEmail" class="panel">
+    <div class="panel-title">🔍 Check Recovery Email</div>
+    <div class="field"><label>Access Token</label>
+      <input type="text" id="chk-token" placeholder="Paste access token here"/></div>
+    <div class="btn-row">
+      <button class="btn btn-primary" onclick="checkEmail()">▶ Fetch Info</button>
+    </div>
+    <div id="check-result"></div>
+    <div class="log-box" id="log-checkEmail"></div>
+  </div>
+
+  <!-- ─── PANEL 3: Linked Platforms ─── -->
+  <div id="panel-platforms" class="panel">
+    <div class="panel-title">🔗 Check Linked Platforms</div>
+    <div class="field"><label>Access Token</label>
+      <input type="text" id="plat-token" placeholder="Paste access token here"/></div>
+    <div class="btn-row">
+      <button class="btn btn-primary" onclick="checkPlatforms()">▶ Scan Accounts</button>
+    </div>
+    <div id="plat-result"></div>
+    <div class="log-box" id="log-platforms"></div>
+  </div>
+
+  <!-- ─── PANEL 4: Cancel Recovery Email ─── -->
+  <div id="panel-cancelEmail" class="panel">
+    <div class="panel-title">❌ Cancel Recovery Email Request</div>
+    <div class="field"><label>Access Token</label>
+      <input type="text" id="cancel-token" placeholder="Paste access token here"/></div>
+    <div class="btn-row">
+      <button class="btn btn-danger" onclick="cancelEmail()">▶ Cancel Request</button>
+    </div>
+    <div class="log-box" id="log-cancelEmail"></div>
+  </div>
+
+  <!-- ─── PANEL 5: Unbind Email ─── -->
+  <div id="panel-unbind" class="panel">
+    <div class="panel-title">🔓 Unbind Email</div>
+    <div class="steps" id="steps-unbind">
+      <div class="step active" id="unStep-1">1 · Verify</div>
+      <div class="step" id="unStep-2">2 · Unbind</div>
+    </div>
+    <div class="field">
+      <label>Verification Method</label>
+      <div class="radio-group">
+        <label class="radio-option">
+          <input type="radio" name="unbind-method" value="otp" checked> 📧 Email OTP
+        </label>
+        <label class="radio-option">
+          <input type="radio" name="unbind-method" value="password"> 🔑 Secondary Password
+        </label>
+      </div>
+    </div>
+    <div class="field"><label>Linked Email</label>
+      <input type="email" id="un-email" placeholder="linked@email.com"/></div>
+    <div class="field"><label>Access Token</label>
+      <input type="text" id="un-token" placeholder="Paste access token here"/></div>
+    <div id="un-otp-field" class="field"><label>OTP (sent after clicking send)</label>
+      <input type="text" id="un-otp" placeholder="6-digit OTP"/></div>
+    <div id="un-pass-field" class="field" style="display:none"><label>Secondary Password</label>
+      <input type="password" id="un-pass" placeholder="Secondary password"/></div>
+    <div class="btn-row">
+      <button class="btn btn-secondary" id="un-sendotp-btn" onclick="unbindSendOtp()">📨 Send OTP</button>
+      <button class="btn btn-danger" onclick="doUnbind()">▶ Unbind Email</button>
+    </div>
+    <div class="log-box" id="log-unbind"></div>
+  </div>
+
+  <!-- ─── PANEL 6: Change Bind Email ─── -->
+  <div id="panel-changeEmail" class="panel">
+    <div class="panel-title">🔄 Change Bind Email</div>
+    <div class="steps">
+      <div class="step active" id="chg-step1">1 · Verify Old</div>
+      <div class="step" id="chg-step2">2 · Verify New</div>
+      <div class="step" id="chg-step3">3 · Rebind</div>
+    </div>
+    <div class="field"><label>Verification Method</label>
+      <div class="radio-group">
+        <label class="radio-option">
+          <input type="radio" name="chg-method" value="otp" checked> 📧 Old Email OTP
+        </label>
+        <label class="radio-option">
+          <input type="radio" name="chg-method" value="password"> 🔑 Secondary Password
+        </label>
+      </div>
+    </div>
+    <div class="field"><label>Access Token</label>
+      <input type="text" id="chg-token" placeholder="Paste access token here"/></div>
+    <div class="field"><label>Old Email</label>
+      <input type="email" id="chg-old-email" placeholder="old@email.com"/></div>
+    <div class="field"><label>New Email</label>
+      <input type="email" id="chg-new-email" placeholder="new@email.com"/></div>
+    <div id="chg-oldotp-field" class="field"><label>OTP for Old Email</label>
+      <input type="text" id="chg-old-otp" placeholder="OTP from old email"/></div>
+    <div id="chg-pass-field" class="field" style="display:none"><label>Secondary Password</label>
+      <input type="password" id="chg-pass" placeholder="Secondary password"/></div>
+    <div id="chg-newotp-field" class="field" style="display:none"><label>OTP for New Email</label>
+      <input type="text" id="chg-new-otp" placeholder="OTP from new email"/></div>
+    <div class="btn-row">
+      <button class="btn btn-secondary" onclick="chgSendOldOtp()">📨 Send Old OTP</button>
+      <button class="btn btn-secondary" onclick="chgVerifyOld()">✅ Verify Old</button>
+      <button class="btn btn-secondary" id="chg-sendNewOtp-btn" onclick="chgSendNewOtp()" disabled>📨 Send New OTP</button>
+      <button class="btn btn-primary" id="chg-finish-btn" onclick="chgFinish()" disabled>▶ Rebind</button>
+    </div>
+    <div class="log-box" id="log-changeEmail"></div>
+  </div>
+
+  <!-- ─── PANEL 7: Revoke Token ─── -->
+  <div id="panel-revoke" class="panel">
+    <div class="panel-title">🚫 Revoke Access Token</div>
+    <div class="field"><label>Access Token to Revoke</label>
+      <input type="text" id="rev-token" placeholder="Paste access token here"/></div>
+    <div class="btn-row">
+      <button class="btn btn-danger" onclick="revokeToken()">▶ Revoke Token</button>
+    </div>
+    <div class="log-box" id="log-revoke"></div>
+  </div>
+
+  <!-- FOOTER -->
+  <div class="footer">
+    <div>GARENA SECURITY TOOL v2.0 · ELITE EDITION</div>
+    <div style="margin-top:6px;">
+      Credits: <a href="#">@sulav_codex_ff</a> &amp; <a href="#">@agajayofficial</a>
+    </div>
+  </div>
+
+</div><!-- /container -->
+
+<script>
+// ─── State ───────────────────────────────────────────────
+let addVerifierToken = null;
+let unbindIdentityToken = null;
+let chgIdentityToken = null;
+let chgVerifierToken = null;
+
+// ─── Utility ─────────────────────────────────────────────
+function log(id, msg, type='info') {
+  const box = document.getElementById('log-' + id);
+  const div = document.createElement('div');
+  div.className = 'log-' + type;
+  div.textContent = (type==='success'?'[✓] ':type==='error'?'[✗] ':type==='warn'?'[!] ':'[i] ') + msg;
+  box.appendChild(div);
+  box.scrollTop = box.scrollHeight;
+}
+function clearLog(id) {
+  document.getElementById('log-' + id).innerHTML = '';
+}
+function setStep(prefix, n, total) {
+  for(let i=1;i<=total;i++) {
+    const el = document.getElementById(prefix + i);
+    if(!el) continue;
+    el.className = 'step' + (i<n?' done':i===n?' active':'');
+  }
+}
+async function api(path, body) {
+  const res = await fetch('/api/' + path, {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify(body)
+  });
+  return res.json();
+}
+
+// ─── Panel switching ─────────────────────────────────────
+function showPanel(name) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('visible'));
+  document.querySelectorAll('.menu-btn').forEach(b => b.classList.remove('active'));
+  const panel = document.getElementById('panel-' + name);
+  if(panel) panel.classList.add('visible');
+  panel.scrollIntoView({behavior:'smooth', block:'nearest'});
+}
+
+// Toggle radio-driven fields
+document.querySelectorAll('input[name="unbind-method"]').forEach(r => {
+  r.addEventListener('change', () => {
+    const isOtp = document.querySelector('input[name="unbind-method"]:checked').value === 'otp';
+    document.getElementById('un-otp-field').style.display = isOtp ? '' : 'none';
+    document.getElementById('un-pass-field').style.display = isOtp ? 'none' : '';
+    document.getElementById('un-sendotp-btn').style.display = isOtp ? '' : 'none';
+  });
+});
+document.querySelectorAll('input[name="chg-method"]').forEach(r => {
+  r.addEventListener('change', () => {
+    const isOtp = document.querySelector('input[name="chg-method"]:checked').value === 'otp';
+    document.getElementById('chg-oldotp-field').style.display = isOtp ? '' : 'none';
+    document.getElementById('chg-pass-field').style.display = isOtp ? 'none' : '';
+  });
+});
+
+// ─── 1. Add Recovery Email ────────────────────────────────
+async function addSendOtp() {
+  clearLog('addEmail');
+  const email = document.getElementById('add-email').value.trim();
+  const token = document.getElementById('add-token').value.trim();
+  if(!email||!token) { log('addEmail','Fill all fields','warn'); return; }
+  log('addEmail','Sending OTP to ' + email + '...');
+  const res = await api('send-otp', {email, access_token:token});
+  if(res.success) {
+    log('addEmail','OTP sent! Check your email.','success');
+    document.getElementById('addEmail-step1').style.display = 'none';
+    document.getElementById('addEmail-step2').style.display = '';
+    setStep('addStep-',2,3);
+  } else {
+    log('addEmail', res.error || JSON.stringify(res.data), 'error');
+  }
+}
+
+async function addVerifyOtp() {
+  const otp   = document.getElementById('add-otp').value.trim();
+  const email = document.getElementById('add-email').value.trim();
+  const token = document.getElementById('add-token').value.trim();
+  if(!otp) { log('addEmail','Enter OTP','warn'); return; }
+  log('addEmail','Verifying OTP...');
+  const res = await api('verify-otp', {otp, email, access_token:token});
+  if(res.success && res.verifier_token) {
+    addVerifierToken = res.verifier_token;
+    log('addEmail','OTP verified! Creating bind request...','success');
+    setStep('addStep-',3,3);
+    const bind = await api('create-bind', {verifier_token:addVerifierToken, access_token:token, email});
+    if(bind.success) {
+      log('addEmail', '✅ Email ' + email + ' added successfully!', 'success');
+    } else {
+      log('addEmail', bind.error || JSON.stringify(bind.data), 'error');
+    }
+  } else {
+    log('addEmail', res.error || 'OTP verification failed', 'error');
+  }
+}
+
+// ─── 2. Check Recovery Email ──────────────────────────────
+async function checkEmail() {
+  clearLog('checkEmail');
+  document.getElementById('check-result').innerHTML = '';
+  const token = document.getElementById('chk-token').value.trim();
+  if(!token) { log('checkEmail','Enter access token','warn'); return; }
+  log('checkEmail','Fetching account info...');
+  const res = await api('bind-info', {access_token:token});
+  if(res.success) {
+    const d = res.data;
+    const email    = d.email || '';
+    const emailTBE = d.email_to_be || '';
+    const countdown = d.request_exec_countdown || 0;
+    let html = '<div class="info-card">';
+    if(!email && emailTBE) {
+      html += row('Pending Email', emailTBE, 'yellow');
+      html += row('Confirms In', formatTime(countdown), 'yellow');
+    } else if(email && !emailTBE) {
+      html += row('Current Email', email, 'green');
+      html += row('Status', '✅ Verified & Active', 'green');
+    } else if(!email && !emailTBE) {
+      html += row('Status', '⚠️ No recovery email configured', '');
+    }
+    html += '</div>';
+    document.getElementById('check-result').innerHTML = html;
+    log('checkEmail','Done!','success');
+  } else {
+    log('checkEmail', res.error || 'API error', 'error');
+  }
+}
+
+// ─── 3. Linked Platforms ──────────────────────────────────
+async function checkPlatforms() {
+  clearLog('platforms');
+  document.getElementById('plat-result').innerHTML = '';
+  const token = document.getElementById('plat-token').value.trim();
+  if(!token) { log('platforms','Enter access token','warn'); return; }
+  log('platforms','Scanning linked accounts...');
+  const res = await api('platform-info', {access_token:token});
+  if(res.success) {
+    const names = {3:'Facebook',8:'Gmail',10:'iCloud',5:'VK',11:'Twitter',7:'Huawei'};
+    const bounded = res.data.bounded_accounts || [];
+    const available = res.data.available_platforms || [];
+    let html = '<div class="info-card">';
+    if(bounded.length === 0) {
+      html += '<div class="info-row"><span class="info-val">⚠️ No secondary links found</span></div>';
+    } else {
+      bounded.forEach(acc => {
+        const pname = names[acc.platform] || 'Platform ' + acc.platform;
+        const info = acc.user_info || {};
+        html += row(pname, (info.email||info.nickname||acc.uid||'—'), 'green');
+      });
+    }
+    html += '<div class="info-row"><span class="info-key">Main Platform</span><span class="info-val green">';
+    for(const [id,name] of Object.entries(names)) {
+      if(!available.includes(parseInt(id))) { html += name; break; }
+    }
+    html += '</span></div>';
+    html += '</div>';
+    document.getElementById('plat-result').innerHTML = html;
+    log('platforms','Scan complete!','success');
+  } else {
+    log('platforms', res.error || 'Failed', 'error');
+  }
+}
+
+// ─── 4. Cancel Recovery Email ─────────────────────────────
+async function cancelEmail() {
+  clearLog('cancelEmail');
+  const token = document.getElementById('cancel-token').value.trim();
+  if(!token) { log('cancelEmail','Enter access token','warn'); return; }
+  log('cancelEmail','Cancelling request...');
+  const res = await api('cancel-request', {access_token:token});
+  if(res.success) {
+    log('cancelEmail','Recovery email request cancelled!','success');
+  } else {
+    log('cancelEmail', res.error || 'No active request found', 'error');
+  }
+}
+
+// ─── 5. Unbind Email ─────────────────────────────────────
+async function unbindSendOtp() {
+  clearLog('unbind');
+  const email = document.getElementById('un-email').value.trim();
+  const token = document.getElementById('un-token').value.trim();
+  if(!email||!token) { log('unbind','Fill all fields','warn'); return; }
+  log('unbind','Sending OTP to ' + email + '...');
+  const res = await api('send-otp', {email, access_token:token});
+  if(res.success) { log('unbind','OTP sent!','success'); }
+  else { log('unbind', res.error || 'Failed', 'error'); }
+}
+
+async function doUnbind() {
+  clearLog('unbind');
+  const method = document.querySelector('input[name="unbind-method"]:checked').value;
+  const email  = document.getElementById('un-email').value.trim();
+  const token  = document.getElementById('un-token').value.trim();
+  let body = {email, access_token:token, method};
+  if(method==='otp') body.otp = document.getElementById('un-otp').value.trim();
+  else body.secondary_password = document.getElementById('un-pass').value.trim();
+  log('unbind','Verifying identity...');
+  const res = await api('unbind', body);
+  if(res.success) {
+    log('unbind','✅ Email unbind request created!','success');
+    setStep('unStep-',2,2);
+  } else {
+    log('unbind', res.error || JSON.stringify(res.data), 'error');
+  }
+}
+
+// ─── 6. Change Bind Email ────────────────────────────────
+async function chgSendOldOtp() {
+  clearLog('changeEmail');
+  const email = document.getElementById('chg-old-email').value.trim();
+  const token = document.getElementById('chg-token').value.trim();
+  const res = await api('send-otp',{email,access_token:token});
+  if(res.success) log('changeEmail','OTP sent to old email!','success');
+  else log('changeEmail',res.error||'Failed','error');
+}
+
+async function chgVerifyOld() {
+  clearLog('changeEmail');
+  const method = document.querySelector('input[name="chg-method"]:checked').value;
+  const token  = document.getElementById('chg-token').value.trim();
+  const oldEmail = document.getElementById('chg-old-email').value.trim();
+  let body = {email:oldEmail, access_token:token, method};
+  if(method==='otp') body.otp = document.getElementById('chg-old-otp').value.trim();
+  else body.secondary_password = document.getElementById('chg-pass').value.trim();
+  log('changeEmail','Verifying identity...');
+  const res = await api('verify-identity',body);
+  if(res.success && res.identity_token) {
+    chgIdentityToken = res.identity_token;
+    log('changeEmail','Identity verified!','success');
+    document.getElementById('chg-sendNewOtp-btn').disabled = false;
+    document.getElementById('chg-newotp-field').style.display = '';
+    setStep('chg-step',2,3);
+  } else {
+    log('changeEmail',res.error||'Verification failed','error');
+  }
+}
+
+async function chgSendNewOtp() {
+  const email = document.getElementById('chg-new-email').value.trim();
+  const token = document.getElementById('chg-token').value.trim();
+  const res = await api('send-otp',{email,access_token:token});
+  if(res.success) {
+    log('changeEmail','OTP sent to new email!','success');
+    document.getElementById('chg-finish-btn').disabled = false;
+  } else {
+    log('changeEmail',res.error||'Failed','error');
+  }
+}
+
+async function chgFinish() {
+  const token    = document.getElementById('chg-token').value.trim();
+  const newEmail = document.getElementById('chg-new-email').value.trim();
+  const newOtp   = document.getElementById('chg-new-otp').value.trim();
+  log('changeEmail','Verifying new OTP...');
+  const vRes = await api('verify-otp',{email:newEmail,otp:newOtp,access_token:token});
+  if(!vRes.success||!vRes.verifier_token) {
+    log('changeEmail',vRes.error||'OTP failed','error'); return;
+  }
+  chgVerifierToken = vRes.verifier_token;
+  log('changeEmail','Finalizing rebind...');
+  const rRes = await api('change-email',{
+    identity_token:chgIdentityToken,
+    verifier_token:chgVerifierToken,
+    email:newEmail,
+    access_token:token
+  });
+  if(rRes.success) {
+    log('changeEmail','✅ Email rebind created successfully!','success');
+    setStep('chg-step',3,3);
+  } else {
+    log('changeEmail',rRes.error||JSON.stringify(rRes.data),'error');
+  }
+}
+
+// ─── 7. Revoke Token ──────────────────────────────────────
+async function revokeToken() {
+  clearLog('revoke');
+  const token = document.getElementById('rev-token').value.trim();
+  if(!token) { log('revoke','Enter access token','warn'); return; }
+  log('revoke','Revoking token...');
+  const res = await api('revoke-token',{access_token:token});
+  if(res.success) log('revoke','✅ Token revoked successfully!','success');
+  else log('revoke',res.error||'Revoke failed','error');
+}
+
+// ─── Helpers ─────────────────────────────────────────────
+function row(key, val, cls='') {
+  return `<div class="info-row">
+    <span class="info-key">${key}</span>
+    <span class="info-val ${cls}">${val}</span>
+  </div>`;
+}
+function formatTime(sec) {
+  const d=Math.floor(sec/86400), h=Math.floor((sec%86400)/3600),
+        m=Math.floor((sec%3600)/60), s=sec%60;
+  return `${d}d ${h}h ${m}m ${s}s`;
+}
+</script>
+</body>
+</html>
