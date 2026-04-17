@@ -1,0 +1,9 @@
+{
+  "name": "garena-security-tool",
+  "version": "2.0.0",
+  "description": "Garena Account Security Tool - Web Edition",
+  "private": true,
+  "engines": {
+    "node": ">=18"
+  }
+}
